@@ -16,29 +16,21 @@ class IpStatus
       if (@QUIET = opts.quiet)
         @DEBUG = false
         @VERBOSE = false
-      else
+        else
         @DEBUG = opts.debug
         @VERBOSE = opts.verbose
         @VERBOSE = true if @DEBUG
       end
     end
     puts "DEBUG: working in @DEBUG mode" if @DEBUG 
-    puts "VERBOSE: working in verbose mode" if @VERBOSE && false == @DEBUG
     init_db unless @db
     if -1 == @opts.sleep
-      update_status()
-      puts to_s unless @QUIET
+      updated = (update_ip4addr || update_ip6addr)      
+      puts to_s if updated || false == @QUIET
       return
     end
+    puts "will updated status every #{@opts.sleep} seconds."
     sleeper
-  end
-
-    
-  def update_status verbose=true
-
-    if (updated && @QUIET == false) || verbose
-      puts self.to_s
-    end
   end
 
   def sleeper
@@ -128,9 +120,9 @@ class IpStatus
     return if @db
     puts "DEBUG: initing db" if @DEBUG
     if File.exists?(DB)
-      puts "DEBUG: found json file" if @DEBUG    
-      File.open(DB, "r") do |f|
-        @db = JSON.load f
+      puts "loading history file '#{DB}'" unless @QUIET
+      File.open(DB, "r") do |file|
+        @db = JSON.load file
       end
       pp @db if @DEBUG
       return
