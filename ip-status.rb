@@ -29,7 +29,7 @@ class IpStatus
       puts to_s if updated || false == @QUIET
       return
     end
-    puts "will updated status every #{@opts.sleep} seconds."
+    puts "will update status every #{@opts.sleep} seconds."
     sleeper
   end
 
@@ -67,13 +67,16 @@ class IpStatus
     return false if -1 == cur_ip
     if @db["ip4"]["cur_ip"]
       puts "DEBUG: we have an update on ipv4" if @DEBUG
-      puts "\nip4 addr changed from #{@db["ip4"]["cur_ip"]} to #{cur_ip} (last updated #{(Time.now - Time.parse(@db["ip4"]["last_update"])).duration} ago)\n"
+      puts "\nip4 addr changed from #{@db["ip4"]["cur_ip"]} to #{cur_ip} (last updated #{(Time.now - Time.parse(@db["ip4"]["first_seen"])).duration} ago)\n"
       @db["ip4"]["last_ip"] = @db["ip4"]["cur_ip"]
     else
       puts "DEBUG: we have a brand new ip4 addr" if @DEBUG
     end
+    if @db["ip4"]["cur_ip"] && @db["ip4"]["first_seen"]
+      @db["ip4"]["history"] << {"ip": @db["ip4"]["cur_ip"], "first_seen": @db["ip4"]["first_seen"]}
+    end
     @db["ip4"]["cur_ip"] = cur_ip
-    @db["ip4"]["last_update"] = Time.now.to_s
+    @db["ip4"]["first_seen"] = Time.now.to_s
     save_db_to_file
     true
   end
@@ -85,13 +88,16 @@ class IpStatus
     return false if -1 == cur_ip    
     if @db["ip6"]["cur_ip"]
       puts "DEBUG: we have an update on ipv6" if @DEBUG
-      puts "\nip6 addr changed from #{@db["ip6"]["cur_ip"]} to #{cur_ip} (last updated #{(Time.now - Time.parse(@db["ip6"]["last_update"])).duration} ago)\n"
+      puts "\nip6 addr changed from #{@db["ip6"]["cur_ip"]} to #{cur_ip} (last updated #{(Time.now - Time.parse(@db["ip6"]["first_seen"])).duration} ago)\n"
       @db["ip6"]["last_ip"] = @db["ip6"]["cur_ip"]      
     else
       puts "DEBUG: we have a brand new ip6 addr" if @DEBUG
     end
+    if @db["ip6"]["cur_ip"] && @db["ip6"]["first_seen"]
+      @db["ip6"]["history"] << {"ip": @db["ip6"]["cur_ip"], "first_seen": @db["ip6"]["first_seen"]}
+    end
     @db["ip6"]["cur_ip"] = cur_ip
-    @db["ip6"]["last_update"] = Time.now.to_s
+    @db["ip6"]["first_seen"] = Time.now.to_s
     save_db_to_file    
     true
   end
@@ -108,9 +114,7 @@ class IpStatus
   
   def save_db_to_file
     puts "DEBUG: writing db" if @DEBUG
-    ip4_json = @db["ip4"].to_json
-    ip4_json = @db["ip6"].to_json
-    #  json = 
+
     File.open(DB,"w") do |f|
       f.write("#{@db.to_json}")
     end  
@@ -132,6 +136,7 @@ class IpStatus
       ["ip4", "ip6"].each do |ipv|
         puts "DEBUG: initing db for #{ipv}" if @DEBUG
         @db[ipv] = {}
+        @db[ipv]["history"] = []
       end
     end
   end
@@ -158,8 +163,8 @@ class IpStatus
     else
       msg << "ipv4: \n\t#{@db["ip4"]["cur_ip"]}"
       begin
-        if 10 < (Time.now - Time.parse(@db["ip4"]["last_update"])).to_i
-          msg << " (updated: #{(Time.now - Time.parse(@db["ip4"]["last_update"])).duration} ago)"
+        if 10 < (Time.now - Time.parse(@db["ip4"]["first_seen"])).to_i
+          msg << " (updated: #{(Time.now - Time.parse(@db["ip4"]["first_seen"])).duration} ago)"
         end
         msg << "\n"
         if @db["ip4"]["last_ip"] && false == @db["ip4"]["last_ip"].empty?
@@ -173,8 +178,8 @@ class IpStatus
     else
       msg << "ipv6: \n\t#{@db["ip6"]["cur_ip"]}"
       begin
-        if 10 < (Time.now - Time.parse(@db["ip6"]["last_update"])).to_i
-          msg << " (updated: #{(Time.now - Time.parse(@db["ip6"]["last_update"])).duration} ago)"
+        if 10 < (Time.now - Time.parse(@db["ip6"]["first_seen"])).to_i
+          msg << " (updated: #{(Time.now - Time.parse(@db["ip6"]["first_seen"])).duration} ago)"
         end
         msg << "\n"
         if @db["ip6"]["last_ip"] && false == @db["ip6"]["last_ip"].empty?
