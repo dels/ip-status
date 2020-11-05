@@ -37,16 +37,14 @@ class IpStatus
     iter = 0
     while true
       updated = false
-      iter = iter + 1    
+      iter = iter + 1
       begin
         puts "DEBUG: starting iteration #{iter}" if @DEBUG
         show_wait_spinner {
           updated = (update_ip4addr || update_ip6addr)
         }
         puts "DEBUG: we had an update? #{updated}" if @DEBUG
-        if @DEBUG || updated
-          puts self.to_s
-        end
+        puts self.to_s if @DEBUG || updated
         sleep @opts.sleep
       rescue SystemExit, Interrupt
         puts "\n"
@@ -66,6 +64,7 @@ class IpStatus
     init_db unless @db
     cur_ip = get_ip('https://4.fst.st/ip')
     return false if cur_ip == @db["ip4"]["cur_ip"]
+    return false if -1 == cur_ip
     if @db["ip4"]["cur_ip"]
       puts "DEBUG: we have an update on ipv4" if @DEBUG
       puts "\nip4 addr changed from #{@db["ip4"]["cur_ip"]} to #{cur_ip} (last updated #{(Time.now - Time.parse(@db["ip4"]["last_update"])).duration} ago)\n"
@@ -83,6 +82,7 @@ class IpStatus
     init_db unless @db
     cur_ip = get_ip('https://6.fst.st/ip')
     return false if cur_ip == @db["ip6"]["cur_ip"]
+    return false if -1 == cur_ip    
     if @db["ip6"]["cur_ip"]
       puts "DEBUG: we have an update on ipv6" if @DEBUG
       puts "\nip6 addr changed from #{@db["ip6"]["cur_ip"]} to #{cur_ip} (last updated #{(Time.now - Time.parse(@db["ip6"]["last_update"])).duration} ago)\n"
