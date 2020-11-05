@@ -68,7 +68,7 @@ class IpStatus
     return false if cur_ip == @db["ip4"]["cur_ip"]
     if @db["ip4"]["cur_ip"]
       puts "DEBUG: we have an update on ipv4" if @DEBUG
-      puts "ip4 addr changed from #{@db["ip4"]["cur_ip"]} to #{cur_ip} (last updated #{(Time.now - Time.parse(@db["ip4"]["last_update"])).duration} ago)"
+      puts "\nip4 addr changed from #{@db["ip4"]["cur_ip"]} to #{cur_ip} (last updated #{(Time.now - Time.parse(@db["ip4"]["last_update"])).duration} ago)\n"
       @db["ip4"]["last_ip"] = @db["ip4"]["cur_ip"]
     else
       puts "DEBUG: we have a brand new ip4 addr" if @DEBUG
@@ -85,7 +85,7 @@ class IpStatus
     return false if cur_ip == @db["ip6"]["cur_ip"]
     if @db["ip6"]["cur_ip"]
       puts "DEBUG: we have an update on ipv6" if @DEBUG
-      puts "ip6 addr changed from #{@db["ip6"]["cur_ip"]} to #{cur_ip} (last updated #{(Time.now - Time.parse(@db["ip6"]["last_update"])).duration} ago)"
+      puts "\nip6 addr changed from #{@db["ip6"]["cur_ip"]} to #{cur_ip} (last updated #{(Time.now - Time.parse(@db["ip6"]["last_update"])).duration} ago)\n"
       @db["ip6"]["last_ip"] = @db["ip6"]["cur_ip"]      
     else
       puts "DEBUG: we have a brand new ip6 addr" if @DEBUG
