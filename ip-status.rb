@@ -157,25 +157,31 @@ class IpStatus
       msg << "ERROR: could not update ipv4 addr"
     else
       msg << "ipv4: \n\t#{@db["ip4"]["cur_ip"]}"
-      if 10 < (Time.now - Time.parse(@db["ip4"]["last_update"])).to_i
-        msg << " (updated: #{(Time.now - Time.parse(@db["ip4"]["last_update"])).duration} ago)"
-      end
-      msg << "\n"
-      if @db["ip4"]["last_ip"] && false == @db["ip4"]["last_ip"].empty?
-        msg << "\tprev addr: #{@db['ip4']['last_ip']}\n"
+      begin
+        if 10 < (Time.now - Time.parse(@db["ip4"]["last_update"])).to_i
+          msg << " (updated: #{(Time.now - Time.parse(@db["ip4"]["last_update"])).duration} ago)"
+        end
+        msg << "\n"
+        if @db["ip4"]["last_ip"] && false == @db["ip4"]["last_ip"].empty?
+          msg << "\tprev addr: #{@db['ip4']['last_ip']}\n"
+        end
+      rescue
       end
     end
     if -1 == ip6
       msg << "ERROR: could not update ipv6 addr"
     else
       msg << "ipv6: \n\t#{@db["ip6"]["cur_ip"]}"
-      if 10 < (Time.now - Time.parse(@db["ip6"]["last_update"])).to_i
-        msg << " (updated: #{(Time.now - Time.parse(@db["ip6"]["last_update"])).duration} ago)"
+      begin
+        if 10 < (Time.now - Time.parse(@db["ip6"]["last_update"])).to_i
+          msg << " (updated: #{(Time.now - Time.parse(@db["ip6"]["last_update"])).duration} ago)"
+        end
+        msg << "\n"
+        if @db["ip6"]["last_ip"] && false == @db["ip6"]["last_ip"].empty?
+          msg << "\tprev addr:  #{@db['ip6']['last_ip']}\n"
+        end
+      rescue
       end
-      msg << "\n"
-      if @db["ip6"]["last_ip"] && false == @db["ip6"]["last_ip"].empty?
-        msg << "\tprev addr:  #{@db['ip6']['last_ip']}\n"
-      end      
     end
     msg << "\n"
     msg
