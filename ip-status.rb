@@ -100,10 +100,8 @@ class IpStatus
   
   def save_db_to_file
     puts "DEBUG: writing db" if @DEBUG
-
     File.open(DB,"w") do |f|
-      # f.write("#{@db.to_json}")
-      f.write(JSON.pretty_generate(@db))
+      @opts.pretty_database ? f.write(JSON.pretty_generate(@db)) : f.write(@db.to_json)
     end  
   end
   
