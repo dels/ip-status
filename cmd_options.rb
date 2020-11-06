@@ -7,13 +7,14 @@ class OptparseExample
   Version = '0.0.1'
 
   class ScriptOptions
-    attr_accessor :verbose, :debug, :quiet, :sleep
+    attr_accessor :verbose, :debug, :quiet, :sleep, :max_history
 
     def initialize
       self.debug = false
       self.verbose = true
       self.quiet = false
       self.sleep = -1
+      self.max_history = 3
     end
 
     def define_options(parser)
@@ -21,6 +22,7 @@ class OptparseExample
       parser.separator ""
       parser.separator "Specific options:"
       sleep_between_execution_option(parser)
+      max_history_items_option(parser)      
       boolean_debug_option(parser)
       boolean_verbose_option(parser)
       boolean_quiet_option(parser)
@@ -40,8 +42,13 @@ class OptparseExample
       end
     end
 
+    def max_history_items_option(parser)
+      parser.on("--history-items N", Integer, "show N history items - use -1 for no limit") do |n|
+        self.max_history = n
+      end
+    end
+
     def sleep_between_execution_option(parser)
-      # Cast 'sleep' argument to a Float.
       parser.on("--sleep N", Integer, "Sleep N seconds before next check") do |n|
         self.sleep = n
       end

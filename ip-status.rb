@@ -163,25 +163,25 @@ class IpStatus
     msg = ""
     msg << "#{version}: \n\t#{@db[version]["cur_ip"]}"
     begin
-      
       if 10 < (Time.now - Time.parse(@db[version]["first_seen"])).to_i
         msg << " (updated: #{(Time.now - Time.parse(@db[version]["first_seen"])).duration} ago)"
       else
         msg << " (updated just now)"
       end
-      
-      puts "DEBUG: found #{@db[version]["history"].size} history elements" if @DEBUG
+      puts "DEBUG: found #{@db[version]["history"].size} history elements for #{version}" if @DEBUG
       msg << "\n"
-      
-      @db[version]["history"].each do |hist|
+      ec = 0
+      (@db[version]["history"].sort {|h1,h2| h2["first_seen"] <=> h1["first_seen"] }).each do |hist|
         msg << "\t#{hist['ip']} (first seen at #{hist['first_seen'] })"
         msg << "\n"
+        ec = ec + 1
+        break if ec >= @opts.max_history && 0 < @opts.max_history
       end
     rescue Exception => e
       puts "WARN: exception caught..." if @DEBUG
       raise e if @DEBUG
     end
-    pp @db if @DEBUG
+    # pp @db if @DEBUG
     msg
   end
 
