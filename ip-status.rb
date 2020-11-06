@@ -169,7 +169,7 @@ class IpStatus
       puts "DEBUG: found #{@db[version]["history"].size} history elements for #{version}" if @DEBUG
       msg << "\n"
       ec = 0
-      (@db[version]["history"].sort {|h1,h2| h2["first_seen"] <=> h1["first_seen"] }).each do |hist|
+      (@db[version]["history"].sort {|h1,h2| Time.parse(h2["first_seen"]) <=> Time.parse(h1["first_seen"]) }).each do |hist|
         msg << "\t#{hist['ip']} (first seen at #{hist['first_seen'] })"
         msg << "\n"
         ec = ec + 1
