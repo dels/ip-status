@@ -45,13 +45,13 @@ class OptparseExample
     end
 
     def max_history_items_option(parser)
-      parser.on("--history-items N", Integer, "show N history items - use -1 for no limit") do |n|
+      parser.on("-hi", "--history-items N", Integer, "show N history items - use -1 for no limit") do |n|
         self.max_history = n
       end
     end
 
     def sleep_between_execution_option(parser)
-      parser.on("--sleep N", Integer, "Sleep N seconds before next check") do |n|
+      parser.on("-s", "--sleep N", Integer, "Sleep N seconds before next check") do |n|
         self.sleep = n
       end
     end
