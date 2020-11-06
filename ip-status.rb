@@ -24,11 +24,9 @@ class IpStatus
     end
     puts "DEBUG: working in @DEBUG mode" if @DEBUG 
     init_db unless @db
-    if -1 == @opts.sleep
-      updated = (update_ip4addr || update_ip6addr)      
-      puts to_s if updated || false == @QUIET
-      return
-    end
+    updated = (update_ip4addr || update_ip6addr)      
+    puts to_s if updated || false == @QUIET
+    exit if -1 == @opts.sleep
     puts "will update status every #{@opts.sleep} seconds."
     sleeper
   end
@@ -59,47 +57,35 @@ class IpStatus
       end
     end
   end
-  
-  def update_ip4addr
-    init_db unless @db
-    cur_ip = get_ip('https://4.fst.st/ip')
-    return false if cur_ip == @db["ip4"]["cur_ip"]
+
+  def update_ipaddr cur_ip, version
+    return false if cur_ip == @db[version]["cur_ip"]
     return false if -1 == cur_ip
-    if @db["ip4"]["cur_ip"]
-      puts "DEBUG: we have an update on ipv4" if @DEBUG
-      puts "\nip4 addr changed from #{@db["ip4"]["cur_ip"]} to #{cur_ip} (last updated #{(Time.now - Time.parse(@db["ip4"]["first_seen"])).duration} ago)\n"
-      @db["ip4"]["last_ip"] = @db["ip4"]["cur_ip"]
+    if @db[version]["cur_ip"]
+      puts "DEBUG: we have an update on #{version}" if @DEBUG
+      puts "\nip4 addr changed from #{@db[version]["cur_ip"]} to #{cur_ip} (last updated #{(Time.now - Time.parse(@db[version]["first_seen"])).duration} ago)\n"
     else
       puts "DEBUG: we have a brand new ip4 addr" if @DEBUG
     end
-    if @db["ip4"]["cur_ip"] && @db["ip4"]["first_seen"]
-      @db["ip4"]["history"] << {"ip": @db["ip4"]["cur_ip"], "first_seen": @db["ip4"]["first_seen"]}
+    if @db[version]["cur_ip"] && @db[version]["first_seen"]
+      @db[version]["history"] << {"ip" => @db[version]["cur_ip"], "first_seen" => @db[version]["first_seen"]}
     end
-    @db["ip4"]["cur_ip"] = cur_ip
-    @db["ip4"]["first_seen"] = Time.now.to_s
+    @db[version]["cur_ip"] = cur_ip
+    @db[version]["first_seen"] = Time.now.to_s
     save_db_to_file
     true
   end
   
+  def update_ip4addr
+    init_db unless @db
+    cur_ip = get_ip('https://4.fst.st/ip')
+    return update_ipaddr(cur_ip, "ip4")
+  end
+  
   def update_ip6addr
     init_db unless @db
-    cur_ip = get_ip('https://6.fst.st/ip')
-    return false if cur_ip == @db["ip6"]["cur_ip"]
-    return false if -1 == cur_ip    
-    if @db["ip6"]["cur_ip"]
-      puts "DEBUG: we have an update on ipv6" if @DEBUG
-      puts "\nip6 addr changed from #{@db["ip6"]["cur_ip"]} to #{cur_ip} (last updated #{(Time.now - Time.parse(@db["ip6"]["first_seen"])).duration} ago)\n"
-      @db["ip6"]["last_ip"] = @db["ip6"]["cur_ip"]      
-    else
-      puts "DEBUG: we have a brand new ip6 addr" if @DEBUG
-    end
-    if @db["ip6"]["cur_ip"] && @db["ip6"]["first_seen"]
-      @db["ip6"]["history"] << {"ip": @db["ip6"]["cur_ip"], "first_seen": @db["ip6"]["first_seen"]}
-    end
-    @db["ip6"]["cur_ip"] = cur_ip
-    @db["ip6"]["first_seen"] = Time.now.to_s
-    save_db_to_file    
-    true
+    cur_ip = get_ip('https://6.fst.st/ip') 
+    return update_ipaddr(cur_ip, "ip6")
   end
 
   def ip4
@@ -116,7 +102,8 @@ class IpStatus
     puts "DEBUG: writing db" if @DEBUG
 
     File.open(DB,"w") do |f|
-      f.write("#{@db.to_json}")
+      # f.write("#{@db.to_json}")
+      f.write(JSON.pretty_generate(@db))
     end  
   end
   
@@ -133,10 +120,10 @@ class IpStatus
     else
       puts "DEBUG: initing hash json file no found" if @DEBUG
       @db = {}
-      ["ip4", "ip6"].each do |ipv|
-        puts "DEBUG: initing db for #{ipv}" if @DEBUG
-        @db[ipv] = {}
-        @db[ipv]["history"] = []
+      ["ip4", "ip6"].each do |version|
+        puts "DEBUG: initing db for #{version}" if @DEBUG
+        @db[version] = {}
+        @db[version]["history"] = []
       end
     end
   end
@@ -155,40 +142,46 @@ class IpStatus
     end
   end
 
-
   def to_s
+    init_db unless @db
     msg = "\n"
     if -1 == ip4
       msg << "ERROR: could not update ipv4 addr"
     else
-      msg << "ipv4: \n\t#{@db["ip4"]["cur_ip"]}"
-      begin
-        if 10 < (Time.now - Time.parse(@db["ip4"]["first_seen"])).to_i
-          msg << " (updated: #{(Time.now - Time.parse(@db["ip4"]["first_seen"])).duration} ago)"
-        end
-        msg << "\n"
-        if @db["ip4"]["last_ip"] && false == @db["ip4"]["last_ip"].empty?
-          msg << "\tprev addr: #{@db['ip4']['last_ip']}\n"
-        end
-      rescue
-      end
+      msg << print_ip("ip4")
     end
     if -1 == ip6
       msg << "ERROR: could not update ipv6 addr"
     else
-      msg << "ipv6: \n\t#{@db["ip6"]["cur_ip"]}"
-      begin
-        if 10 < (Time.now - Time.parse(@db["ip6"]["first_seen"])).to_i
-          msg << " (updated: #{(Time.now - Time.parse(@db["ip6"]["first_seen"])).duration} ago)"
-        end
-        msg << "\n"
-        if @db["ip6"]["last_ip"] && false == @db["ip6"]["last_ip"].empty?
-          msg << "\tprev addr:  #{@db['ip6']['last_ip']}\n"
-        end
-      rescue
-      end
+      msg << print_ip("ip6")
     end
     msg << "\n"
+    msg
+  end
+
+  def print_ip version
+    msg = ""
+    msg << "#{version}: \n\t#{@db[version]["cur_ip"]}"
+    begin
+      
+      if 10 < (Time.now - Time.parse(@db[version]["first_seen"])).to_i
+        msg << " (updated: #{(Time.now - Time.parse(@db[version]["first_seen"])).duration} ago)"
+      else
+        msg << " (updated just now)"
+      end
+      
+      puts "DEBUG: found #{@db[version]["history"].size} history elements" if @DEBUG
+      msg << "\n"
+      
+      @db[version]["history"].each do |hist|
+        msg << "\t#{hist['ip']} (first seen at #{hist['first_seen'] })"
+        msg << "\n"
+      end
+    rescue Exception => e
+      puts "WARN: exception caught..." if @DEBUG
+      raise e if @DEBUG
+    end
+    pp @db if @DEBUG
     msg
   end
 
