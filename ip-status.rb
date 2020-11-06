@@ -63,7 +63,7 @@ class IpStatus
     return false if -1 == cur_ip
     if @db[version]["cur_ip"]
       puts "DEBUG: we have an update on #{version}" if @DEBUG
-      puts "\nip4 addr changed from #{@db[version]["cur_ip"]} to #{cur_ip} (last updated #{(Time.now - Time.parse(@db[version]["first_seen"])).duration} ago)\n"
+      puts "\n#{version} addr changed from #{@db[version]["cur_ip"]} to #{cur_ip} (last updated #{(Time.now - Time.parse(@db[version]["first_seen"])).duration} ago)\n"
     else
       puts "DEBUG: we have a brand new ip4 addr" if @DEBUG
     end
