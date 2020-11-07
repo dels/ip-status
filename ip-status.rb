@@ -134,7 +134,7 @@ class IpStatus
                       :use_ssl => uri.scheme == 'https') do |http|
         req = Net::HTTP::Get.new(uri)
         res = http.request(req)
-        puts "WARN: response code was #{res.code}. expected 200." if 200 <> res && false == @QUIET
+        puts "WARN: response code was #{res.code}. expected 200." if 200 != res && false == @QUIET
         res.body
       end
     rescue => e
