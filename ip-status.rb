@@ -137,7 +137,7 @@ class IpStatus
         res.body
       end
     rescue => e
-      puts "WARN: could not read ip addr (code: #{res.code}): #{e.to_s}" unless @QUIET
+      puts "WARN: could not read ip addr: #{e.to_s}" unless @QUIET
       -1
     end
   end
