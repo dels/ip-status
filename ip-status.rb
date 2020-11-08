@@ -81,18 +81,13 @@ class IpStatus
   
   def update_ip4addr
     init_db unless @db
-    ip4_url = "https://4.fst.st/ip"
-    ip4_url << "?client_id=#{@db["client_id"]}" if @db["client_id"]
-    cur_ip = get_ip(ip4_url)
+    cur_ip = get_ip("https://4.fst.st/ip?client_id=#{@db["client_id"]}")
     return update_ipaddr(cur_ip, "ip4")
   end
   
   def update_ip6addr
     init_db unless @db
-    cur_ip = get_ip('https://6.fst.st/ip')
-    ip6_url = "https://6.fst.st/ip"
-    ip6_url << "?client_id=#{@db["client_id"]}" if @db["client_id"]
-    cur_ip = get_ip(ip6_url)
+    cur_ip = get_ip("https://6.fst.st/ip?client_id=#{@db["client_id"]}")    
     return update_ipaddr(cur_ip, "ip6")
   end
 
