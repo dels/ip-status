@@ -2,8 +2,11 @@
 require 'net/http'
 require 'json'
 require 'time'
+require 'securerandom'
 require_relative 'numeric'
 require_relative 'cmd_options'
+
+raise "Ruby Version 2.0 or higher required." if RUBY_VERSION < '2'
 
 class IpStatus
   @DEBUG = false
@@ -78,13 +81,18 @@ class IpStatus
   
   def update_ip4addr
     init_db unless @db
-    cur_ip = get_ip('https://4.fst.st/ip')
+    ip4_url = "https://4.fst.st/ip"
+    ip4_url << "?client_id=#{@db["client_id"]}" if @db["client_id"]
+    cur_ip = get_ip(ip4_url)
     return update_ipaddr(cur_ip, "ip4")
   end
   
   def update_ip6addr
     init_db unless @db
-    cur_ip = get_ip('https://6.fst.st/ip') 
+    cur_ip = get_ip('https://6.fst.st/ip')
+    ip6_url = "https://6.fst.st/ip"
+    ip6_url << "?client_id=#{@db["client_id"]}" if @db["client_id"]
+    cur_ip = get_ip(ip6_url)
     return update_ipaddr(cur_ip, "ip6")
   end
 
@@ -104,6 +112,10 @@ class IpStatus
       @opts.pretty_database ? f.write(JSON.pretty_generate(@db)) : f.write(@db.to_json)
     end  
   end
+
+  def db_upgrade
+    @db["client_id"] = SecureRandom.uuid unless @db["client_id"]
+  end
   
   def init_db
     return if @db
@@ -114,6 +126,7 @@ class IpStatus
         @db = JSON.load file
       end
       pp @db if @DEBUG
+      db_upgrade
       return
     else
       puts "DEBUG: initing hash json file no found" if @DEBUG
@@ -123,6 +136,7 @@ class IpStatus
         @db[version] = {}
         @db[version]["history"] = []
       end
+      db_upgrade
     end
   end
   
