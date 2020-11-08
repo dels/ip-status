@@ -110,6 +110,7 @@ class IpStatus
 
   def db_upgrade
     @db["client_id"] = SecureRandom.uuid unless @db["client_id"]
+    
   end
   
   def init_db
@@ -121,7 +122,7 @@ class IpStatus
         @db = JSON.load file
       end
       pp @db if @DEBUG
-      db_upgrade
+      db_upgrade()
       return
     else
       puts "DEBUG: initing hash json file no found" if @DEBUG
@@ -131,7 +132,7 @@ class IpStatus
         @db[version] = {}
         @db[version]["history"] = []
       end
-      db_upgrade
+      db_upgrade()
     end
   end
   
