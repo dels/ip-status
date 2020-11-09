@@ -1,5 +1,5 @@
 # coding: utf-8
-# Copyright 2010 Dominik Elsbroek. All rights reserved.
+# Copyright 2020 Dominik Elsbroek. All rights reserved.
 # 
 # Redistribution and use in source and binary forms, with or without modification, are
 # permitted provided that the following conditions are met:
@@ -29,8 +29,8 @@ require 'net/http'
 require 'json'
 require 'time'
 require 'securerandom'
-require_relative 'numeric'
-require_relative 'cmd_options'
+require_relative 'lib/numeric'
+require_relative 'lib/cmd_options'
 
 raise "Ruby Version 2.0 or higher required." if RUBY_VERSION < '2'
 
@@ -170,11 +170,11 @@ class IpStatus
                       :use_ssl => uri.scheme == 'https') do |http|
         req = Net::HTTP::Get.new(uri)
         res = http.request(req)
-        puts "WARN: response code was #{res.code}. expected 200." if 200 != res.code.to_i && false == @QUIET
+        puts "\nWARN: response code was #{res.code}. expected 200.\n" if 200 != res.code.to_i && false == @QUIET
         res.body
       end
     rescue => e
-      puts "WARN: could not read ip addr: #{e.to_s}" unless @QUIET
+      puts "\nWARN: could not read ip addr: #{e.to_s}\n" unless @QUIET
       -1
     end
   end
@@ -183,12 +183,12 @@ class IpStatus
     init_db unless @db
     msg = "\n"
     if -1 == ip4
-      msg << "ERROR: could not update ipv4 addr"
+      msg << "\nERROR: could not update ipv4 addr\n"
     else
       msg << print_ip("ip4")
     end
     if -1 == ip6
-      msg << "ERROR: could not update ipv6 addr"
+      msg << "\nERROR: could not update ipv6 addr\nWARN"
     else
       msg << print_ip("ip6")
     end
