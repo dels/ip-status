@@ -29,9 +29,20 @@ require 'optparse/time'
 require 'ostruct'
 require 'pp'
 
-class OptparseExample
+class Optparser
   Version = '0.0.1'
+  attr_reader :parser, :options
 
+
+  def parse(args)
+    @options = ScriptOptions.new
+    @args = OptionParser.new do |parser|
+      @options.define_options(parser)
+      parser.parse!(args)
+    end
+    @options
+  end
+  
   class ScriptOptions
     attr_accessor :verbose, :debug, :quiet, :sleep, :max_history, :pretty_database
 
@@ -106,16 +117,6 @@ class OptparseExample
     end
   end
 
-  def parse(args)
-    @options = ScriptOptions.new
-    @args = OptionParser.new do |parser|
-      @options.define_options(parser)
-      parser.parse!(args)
-    end
-    @options
-  end
-
-  attr_reader :parser, :options
 end
 
 
