@@ -38,6 +38,8 @@ class IpStatus
   @DEBUG = false
   @VERBOSE = false
   DB = "statistics_db.json"
+  ip4_regex = Regexp.new(/^(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[0-9]{1,2})(\.(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[0-9]{1,2})){3}$/).freeze
+  ip6_regex = Regexp.new(/^\s*((([0-9A-Fa-f]{1,4}:){7}([0-9A-Fa-f]{1,4}|:))|(([0-9A-Fa-f]{1,4}:){6}(:[0-9A-Fa-f]{1,4}|((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3})|:))|(([0-9A-Fa-f]{1,4}:){5}(((:[0-9A-Fa-f]{1,4}){1,2})|:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3})|:))|(([0-9A-Fa-f]{1,4}:){4}(((:[0-9A-Fa-f]{1,4}){1,3})|((:[0-9A-Fa-f]{1,4})?:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(([0-9A-Fa-f]{1,4}:){3}(((:[0-9A-Fa-f]{1,4}){1,4})|((:[0-9A-Fa-f]{1,4}){0,2}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(([0-9A-Fa-f]{1,4}:){2}(((:[0-9A-Fa-f]{1,4}){1,5})|((:[0-9A-Fa-f]{1,4}){0,3}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(([0-9A-Fa-f]{1,4}:){1}(((:[0-9A-Fa-f]{1,4}){1,6})|((:[0-9A-Fa-f]{1,4}){0,4}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(:(((:[0-9A-Fa-f]{1,4}){1,7})|((:[0-9A-Fa-f]{1,4}){0,5}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:)))(%.+)?\s*$/i).freeze  
 
   def initialize opts=nil
     if opts
@@ -67,9 +69,9 @@ class IpStatus
       iter = iter + 1
       begin
         puts "DEBUG: starting iteration #{iter}" if @DEBUG
-        show_wait_spinner {
+        show_wait_spinner do
           updated = (update_ip4addr || update_ip6addr)
-        }
+        end
         puts "DEBUG: we had an update? #{updated}" if @DEBUG
         puts self.to_s if @DEBUG || updated
         sleep @opts.sleep
@@ -108,13 +110,17 @@ class IpStatus
   def update_ip4addr
     init_db unless @db
     cur_ip = get_ip("https://4.fst.st/ip?client_id=#{@db["client_id"]}")
-    return update_ipaddr(cur_ip, "ip4")
+    return update_ipaddr(cur_ip, "ip4") unless cur_ip =~ @ip4_regex
+    puts "WARN: IPv4 (#{cur_ip}) does not match RegEx" unless @QUIET
+    return false
   end
   
   def update_ip6addr
     init_db unless @db
     cur_ip = get_ip("https://6.fst.st/ip?client_id=#{@db["client_id"]}")    
-    return update_ipaddr(cur_ip, "ip6")
+    return update_ipaddr(cur_ip, "ip6") unless cur_ip =~ @ip6_regex
+    puts "WARN: IPv6 (#{cur_ip}) does not match RegEx" unless @QUIET
+    return false    
   end
 
   def ip4
@@ -134,9 +140,9 @@ class IpStatus
     end  
   end
 
+  # method to safely upgrade database on version changes
   def db_upgrade
-    @db["client_id"] = SecureRandom.uuid unless @db["client_id"]
-    
+    nil # no action required
   end
   
   def init_db
@@ -170,11 +176,14 @@ class IpStatus
                       :use_ssl => uri.scheme == 'https') do |http|
         req = Net::HTTP::Get.new(uri)
         res = http.request(req)
-        puts "\nWARN: response code was #{res.code}. expected 200.\n" if 200 != res.code.to_i && false == @QUIET
+        if 200 != res.code.to_i
+          puts "\b  WARN: Could not update IP (HTTP Response Code #{res.code})\n" unless @QUIET
+          return -1
+        end
         res.body
       end
     rescue => e
-      puts "\nWARN: could not read ip addr: #{e.to_s}\n" unless @QUIET
+      puts "\nWARN: Could not read IP Addr: #{e.to_s}\n" unless @QUIET
       -1
     end
   end
@@ -233,7 +242,7 @@ class IpStatus
         print "\b"
       end
     end
-    yield.tap{
+    yield.tap do 
       iter = false
       spinner.join
       if @VERBOSE
@@ -241,12 +250,12 @@ class IpStatus
       else
         print " \b"
       end
-    }
+    end
   end
   
 end
 
-opts = OptparseExample.new.parse(ARGV)
+opts = Optparser.new.parse(ARGV)
 pp opts if opts.debug
 
 ips = IpStatus.new(opts)
